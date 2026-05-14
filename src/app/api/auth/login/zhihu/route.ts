@@ -6,21 +6,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildOAuthUrl } from "@/lib/zhihu-api";
 
-export function GET(req: NextRequest) {
-  const host = req.headers.get("host") || "zhi-radar.vercel.app";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const redirectUri = `${protocol}://${host}/api/auth/callback/zhihu`;
+function getBaseUrl(req: NextRequest): string {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/$/, "");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  if (forwardedHost) return `${proto}://${forwardedHost}`;
+  const host = req.headers.get("host") || "localhost:3000";
+  return host.includes("localhost") ? `http://${host}` : `https://${host}`;
+}
 
+export function GET(req: NextRequest) {
+  if (!process.env.ZHIHU_APP_ID) {
+    return NextResponse.json({ error: "ZHIHU_APP_ID 未配置" }, { status: 501 });
+  }
+
+  const redirectUri = `${getBaseUrl(req)}/api/auth/callback/zhihu`;
   const state = crypto.randomUUID();
   const authUrl = buildOAuthUrl(redirectUri, state);
-
-  // 如果没有配置 AppID，返回提示
-  if (!process.env.ZHIHU_APP_ID) {
-    return NextResponse.json(
-      { error: "ZHIHU_APP_ID 未配置，请在 .env.local 中填写" },
-      { status: 501 }
-    );
-  }
 
   return NextResponse.redirect(authUrl);
 }
