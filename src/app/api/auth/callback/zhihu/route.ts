@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     const { access_token, expires_in } = await exchangeToken(code, redirectUri);
 
-    const response = NextResponse.redirect(new URL("/", req.url));
+    const response = NextResponse.redirect(new URL("/auth/done", req.url));
     response.cookies.set("zh_token", access_token, {
       httpOnly: true,
       secure: !host.includes("localhost"),

@@ -184,6 +184,19 @@ export default function Dashboard() {
       setDagStatusText("知乎授权失败，请重试");
       window.history.replaceState({}, "", window.location.pathname);
     }
+    // 监听弹窗授权完成消息
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === "zhihu-auth-done") {
+        checkAuth().then(({ loggedIn, user }) => {
+          setOauthLoggedIn(loggedIn);
+          setAuthUser(user);
+          if (loggedIn) setDagStatusText("知乎账号已连接");
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -553,7 +566,10 @@ export default function Dashboard() {
   // ── 发布 ──────────────────────────────────────────────────
   const publish = useCallback(() => {
     if (!oauthLoggedIn) {
-      window.location.href = "/api/auth/login/zhihu";
+      const w = 520, h = 680;
+      const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+      const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+      window.open("/api/auth/login/zhihu", "zhihu-oauth", `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`);
       return;
     }
     if (!drafted || criticRound < 1) {
@@ -963,7 +979,16 @@ export default function Dashboard() {
                   <button
                     className="ghost-btn"
                     style={{ width: "100%", justifyContent: "center" }}
-                    onClick={() => { window.location.href = "/api/auth/login/zhihu"; }}
+                    onClick={() => {
+                      const w = 520, h = 680;
+                      const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+                      const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+                      window.open(
+                        "/api/auth/login/zhihu",
+                        "zhihu-oauth",
+                        `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`
+                      );
+                    }}
                   >
                     <KeyRound size={15} />知乎 OAuth 登录
                   </button>
