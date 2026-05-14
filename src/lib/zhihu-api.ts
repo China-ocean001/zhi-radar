@@ -4,7 +4,7 @@
  * 优先使用 ZHIHU_ACCESS_TOKEN 环境变量；未配置时降级 mock
  */
 
-const ZHIHU_BASE = "https://api.zhihu.com";
+const ZHIHU_BASE = "https://openapi.zhihu.com";
 const APP_ID  = process.env.ZHIHU_APP_ID  || "";
 const APP_KEY = process.env.ZHIHU_APP_KEY || "";
 
@@ -12,26 +12,25 @@ const APP_KEY = process.env.ZHIHU_APP_KEY || "";
 
 export function buildOAuthUrl(redirectUri: string, state: string): string {
   const params = new URLSearchParams({
-    client_id: APP_ID,
+    app_id: APP_ID,
     response_type: "code",
     redirect_uri: redirectUri,
-    scope: "public read_user write_note",
     state,
   });
-  return `https://www.zhihu.com/oauth/authorize?${params}`;
+  return `${ZHIHU_BASE}/authorize?${params}`;
 }
 
 export async function exchangeToken(
   code: string,
   redirectUri: string
 ): Promise<{ access_token: string; expires_in: number }> {
-  const res = await fetch(`${ZHIHU_BASE}/oauth/access_token`, {
+  const res = await fetch(`${ZHIHU_BASE}/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "authorization_code",
-      client_id: APP_ID,
-      client_secret: APP_KEY,
+      app_id: APP_ID,
+      app_key: APP_KEY,
       code,
       redirect_uri: redirectUri,
     }),
@@ -191,17 +190,14 @@ export interface ZhihuUser {
 }
 
 export async function fetchUserProfile(token: string): Promise<ZhihuUser> {
-  const res = await fetch(`${ZHIHU_BASE}/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(APP_ID ? { "X-APP-ID": APP_ID } : {}),
-    },
+  const res = await fetch(`${ZHIHU_BASE}/user/info`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`profile fetch failed: ${res.status}`);
   const data = await res.json();
   return {
-    name: data.name || data.display_name || "知乎用户",
-    avatar: data.avatar_url || data.avatar || "",
+    name: data.fullname || data.name || "知乎用户",
+    avatar: data.avatar_path || data.avatar_url || "",
   };
 }
 
