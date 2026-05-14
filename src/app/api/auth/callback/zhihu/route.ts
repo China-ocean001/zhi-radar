@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   try {
     const { access_token, expires_in } = await exchangeToken(code, redirectUri);
 
-    const response = NextResponse.redirect(`${base}/auth/done`);
+    const response = NextResponse.redirect(`${base}/`);
     response.cookies.set("zh_token", access_token, {
       httpOnly: true,
       secure: !base.includes("localhost"),

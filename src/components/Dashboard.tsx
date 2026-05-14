@@ -208,26 +208,9 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 打开知乎 OAuth 弹窗，轮询弹窗关闭后刷新登录态
+  // 跳转知乎 OAuth 授权页（当前标签页，授权后自动回来）
   const openLoginPopup = useCallback(() => {
-    const w = 520, h = 680;
-    const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
-    const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
-    const popup = window.open(
-      "/api/auth/login/zhihu", "zhihu-oauth",
-      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,resizable=yes`
-    );
-    if (!popup) return;
-    const timer = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(timer);
-        checkAuth().then(({ loggedIn, user }) => {
-          setOauthLoggedIn(loggedIn);
-          setAuthUser(user);
-          if (loggedIn) setDagStatusText("知乎账号已连接 ✓");
-        }).catch(() => {});
-      }
-    }, 600);
+    window.location.href = "/api/auth/login/zhihu";
   }, []);
 
   // 首次加载：抓取 25 条热榜并分类到所有领域
