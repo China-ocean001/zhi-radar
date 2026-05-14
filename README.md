@@ -1,4 +1,5 @@
 # 知创雷达 Zhi-Radar
+网址：https://zhi-radar-production.up.railway.app/
 
 > 面向知乎创作者的 AI 选题 + 成稿工作台  
 > 知乎黑客松参赛项目 · MVP 版本
