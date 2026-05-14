@@ -15,6 +15,8 @@ import { runOutlineAgent } from "@/agents/outline";
 import { runCriticAgent } from "@/agents/critic";
 import { fetchAndClassifyHot } from "@/agents/trend";
 import { runInsightAgent } from "@/agents/insight";
+import { checkAuth, logout } from "@/app/actions";
+import type { ZhihuUser } from "@/lib/zhihu-api";
 
 // ── 常量 ─────────────────────────────────────────────────
 const DOMAINS: Domain[] = ["AI产品", "职场", "情感", "科技", "故事"];
@@ -64,6 +66,7 @@ export default function Dashboard() {
   const [draftRewritten, setDraftRewritten] = useState(false);
   const [criticRound, setCriticRound] = useState(0);
   const [oauthLoggedIn, setOauthLoggedIn] = useState(false);
+  const [authUser, setAuthUser] = useState<ZhihuUser | null>(null);
   const [dagStatusText, setDagStatusText] = useState("等待用户运行");
   const [cacheState, setCacheState] = useState("等待选择领域");
   const [showToast, setShowToast] = useState(false);
@@ -168,6 +171,21 @@ export default function Dashboard() {
     // classifiedTopics 不清除 — 切换领域直接复用已分类数据
     setInsightNodes([]);
   }, [updateDag, updateTrace]);
+
+  // 首次加载：检查知乎登录态并处理 OAuth 回调结果
+  useEffect(() => {
+    checkAuth().then(({ loggedIn, user }) => {
+      setOauthLoggedIn(loggedIn);
+      setAuthUser(user);
+    }).catch(() => {});
+    // 处理 OAuth 回调错误
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth_error")) {
+      setDagStatusText("知乎授权失败，请重试");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 首次加载：抓取 25 条热榜并分类到所有领域
   useEffect(() => {
@@ -534,7 +552,10 @@ export default function Dashboard() {
 
   // ── 发布 ──────────────────────────────────────────────────
   const publish = useCallback(() => {
-    if (!oauthLoggedIn) { setOauthLoggedIn(true); }
+    if (!oauthLoggedIn) {
+      window.location.href = "/api/auth/login/zhihu";
+      return;
+    }
     if (!drafted || criticRound < 1) {
       setDagStatusText("请先生成草稿并运行至少一次 Critic 体检");
       return;
@@ -925,13 +946,28 @@ export default function Dashboard() {
                 <p style={{ margin: "8px 0 12px", color: "#64748b", lineHeight: 1.55, fontSize: 13 }}>
                   OAuth 登录后调用 <span className="kbd">POST /openapi/publish/pin</span>。演示模式会模拟发布成功。
                 </p>
-                <button
-                  className="ghost-btn"
-                  style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => setOauthLoggedIn(true)}
-                >
-                  {oauthLoggedIn ? <><Check size={15} />知乎 OAuth 已登录</> : <><KeyRound size={15} />模拟知乎 OAuth 登录</>}
-                </button>
+                {oauthLoggedIn && authUser ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: "var(--radius)", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                    {authUser.avatar && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={authUser.avatar} alt="avatar" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+                    )}
+                    <span style={{ flex: 1, fontSize: 13, color: "#15803d", fontWeight: 600 }}>{authUser.name}</span>
+                    <button
+                      className="ghost-btn"
+                      style={{ padding: "2px 10px", fontSize: 12 }}
+                      onClick={() => logout().then(() => { setOauthLoggedIn(false); setAuthUser(null); })}
+                    >退出</button>
+                  </div>
+                ) : (
+                  <button
+                    className="ghost-btn"
+                    style={{ width: "100%", justifyContent: "center" }}
+                    onClick={() => { window.location.href = "/api/auth/login/zhihu"; }}
+                  >
+                    <KeyRound size={15} />知乎 OAuth 登录
+                  </button>
+                )}
               </section>
             )}
           </div>

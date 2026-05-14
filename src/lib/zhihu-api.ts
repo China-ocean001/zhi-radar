@@ -183,6 +183,28 @@ export async function publishIdea(
   return { id: data.id, url: `https://www.zhihu.com/pin/${data.id}` };
 }
 
+// ─── 用户信息 ──────────────────────────────────────────────
+
+export interface ZhihuUser {
+  name: string;
+  avatar: string;
+}
+
+export async function fetchUserProfile(token: string): Promise<ZhihuUser> {
+  const res = await fetch(`${ZHIHU_BASE}/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(APP_ID ? { "X-APP-ID": APP_ID } : {}),
+    },
+  });
+  if (!res.ok) throw new Error(`profile fetch failed: ${res.status}`);
+  const data = await res.json();
+  return {
+    name: data.name || data.display_name || "知乎用户",
+    avatar: data.avatar_url || data.avatar || "",
+  };
+}
+
 // ─── Mock 数据（API 不可用时的降级） ─────────────────────────
 
 const MOCK_HOT_LIST: ZhihuHotItem[] = [
