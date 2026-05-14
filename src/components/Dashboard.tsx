@@ -657,7 +657,27 @@ export default function Dashboard() {
           <button className="primary-btn" onClick={stage === 1 && topicSelected ? runPipeline : runPipeline} disabled={isRunning || !topicSelected}>
             <Play size={15} />运行 Agent
           </button>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,rgba(0,132,255,0.22),rgba(22,163,74,0.18)),#dce7f5", border: "1px solid #d9e2ef" }} />
+          {oauthLoggedIn && authUser ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} title={authUser.name}>
+              {authUser.avatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={authUser.avatar} alt="avatar" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--blue)" }} />
+                : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--blue)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 14 }}>{authUser.name[0]}</div>
+              }
+            </div>
+          ) : (
+            <button
+              style={{ height: 34, padding: "0 14px", borderRadius: 999, background: "var(--blue)", color: "#fff", border: "none", fontWeight: 650, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
+              onClick={() => {
+                const w = 520, h = 680;
+                const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+                const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
+                window.open("/api/auth/login/zhihu", "zhihu-oauth", `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`);
+              }}
+            >
+              <KeyRound size={14} />登录知乎
+            </button>
+          )}
         </div>
       </header>
 
