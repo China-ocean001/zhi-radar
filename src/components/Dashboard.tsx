@@ -184,19 +184,27 @@ export default function Dashboard() {
       setDagStatusText("知乎授权失败，请重试");
       window.history.replaceState({}, "", window.location.pathname);
     }
-    // 监听弹窗授权完成消息
+    // 监听弹窗授权完成消息（postMessage 备用）
     const onMessage = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      if (e.data?.type === "zhihu-auth-done") {
-        checkAuth().then(({ loggedIn, user }) => {
-          setOauthLoggedIn(loggedIn);
-          setAuthUser(user);
-          if (loggedIn) setDagStatusText("知乎账号已连接");
-        }).catch(() => {});
-      }
+      if (e.data?.type === "zhihu-auth-done") refreshAuth();
+    };
+    // 主要通信：localStorage storage 事件（跨域 OAuth 后最可靠）
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "zhihu-auth-ts") refreshAuth();
+    };
+    const refreshAuth = () => {
+      checkAuth().then(({ loggedIn, user }) => {
+        setOauthLoggedIn(loggedIn);
+        setAuthUser(user);
+        if (loggedIn) setDagStatusText("知乎账号已连接 ✓");
+      }).catch(() => {});
     };
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("storage", onStorage);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
