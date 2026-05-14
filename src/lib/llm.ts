@@ -5,8 +5,8 @@
 
 import { createOpenAI } from "@ai-sdk/openai";
 
-const GATEWAY_URL = process.env.LLM_GATEWAY_URL || "https://api.deepseek.com/v1";
-const GATEWAY_KEY = process.env.LLM_GATEWAY_KEY || "";
+const GATEWAY_URL = (process.env.LLM_GATEWAY_URL || "https://api.deepseek.com/v1").trim();
+const GATEWAY_KEY = (process.env.LLM_GATEWAY_KEY || "").trim();
 
 export const gateway = createOpenAI({
   baseURL: GATEWAY_URL,
