@@ -200,6 +200,28 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 打开知乎 OAuth 弹窗，轮询弹窗关闭后刷新登录态
+  const openLoginPopup = useCallback(() => {
+    const w = 520, h = 680;
+    const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+    const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
+    const popup = window.open(
+      "/api/auth/login/zhihu", "zhihu-oauth",
+      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,resizable=yes`
+    );
+    if (!popup) return;
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(timer);
+        checkAuth().then(({ loggedIn, user }) => {
+          setOauthLoggedIn(loggedIn);
+          setAuthUser(user);
+          if (loggedIn) setDagStatusText("知乎账号已连接 ✓");
+        }).catch(() => {});
+      }
+    }, 600);
+  }, []);
+
   // 首次加载：抓取 25 条热榜并分类到所有领域
   useEffect(() => {
     setIsFetchingTopics(true);
@@ -566,10 +588,7 @@ export default function Dashboard() {
   // ── 发布 ──────────────────────────────────────────────────
   const publish = useCallback(() => {
     if (!oauthLoggedIn) {
-      const w = 520, h = 680;
-      const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
-      const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
-      window.open("/api/auth/login/zhihu", "zhihu-oauth", `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`);
+      openLoginPopup();
       return;
     }
     if (!drafted || criticRound < 1) {
@@ -668,12 +687,7 @@ export default function Dashboard() {
           ) : (
             <button
               style={{ height: 34, padding: "0 14px", borderRadius: 999, background: "var(--blue)", color: "#fff", border: "none", fontWeight: 650, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
-              onClick={() => {
-                const w = 520, h = 680;
-                const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
-                const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
-                window.open("/api/auth/login/zhihu", "zhihu-oauth", `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`);
-              }}
+              onClick={openLoginPopup}
             >
               <KeyRound size={14} />登录知乎
             </button>
@@ -999,16 +1013,7 @@ export default function Dashboard() {
                   <button
                     className="ghost-btn"
                     style={{ width: "100%", justifyContent: "center" }}
-                    onClick={() => {
-                      const w = 520, h = 680;
-                      const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
-                      const top = Math.round(window.screenY + (window.outerHeight - h) / 2);
-                      window.open(
-                        "/api/auth/login/zhihu",
-                        "zhihu-oauth",
-                        `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`
-                      );
-                    }}
+                    onClick={openLoginPopup}
                   >
                     <KeyRound size={15} />知乎 OAuth 登录
                   </button>
